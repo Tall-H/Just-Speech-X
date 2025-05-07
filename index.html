@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Convert PDF and text documents to audio speech using n8n workflows and text-to-speech services">
+    <title>Just Speech X - Document to Audio Converter</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-headphones-alt"></i>
+                <h1>Just Speech X</h1>
+            </div>
+            <p class="tagline">Transform documents to speech within seconds</p>
+        </header>
+
+        <main>
+            <section class="info-panel">
+                <h2>How it works</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-icon"><i class="fas fa-file-upload"></i></div>
+                        <h3>Upload</h3>
+                        <p>Upload your PDF or text document using the form</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon"><i class="fas fa-cogs"></i></div>
+                        <h3>Process</h3>
+                        <p>Our system extracts and converts the text to speech</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon"><i class="fas fa-envelope"></i></div>
+                        <h3>Receive</h3>
+                        <p>Get the audio file delivered to your email</p>
+                    </div>
+                </div>
+                <div class="features">
+                    <h3>Features</h3>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Support for PDF and TXT files</li>
+                        <li><i class="fas fa-check"></i> Natural-sounding voice synthesis</li>
+                        <li><i class="fas fa-check"></i> Fast processing via n8n automation</li>
+                        <li><i class="fas fa-check"></i> Free to use</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="form-panel">
+                <div class="form-container">
+                    <h2>Upload Your Document</h2>
+                    <form id="uploadForm" aria-describedby="formInstructions">
+                        <p id="formInstructions" class="form-instructions">Upload a document to convert to speech</p>
+                        
+                        <div class="form-group">
+                            <label for="documentFile">Document (PDF of TXT):</label>
+                            <div class="file-input-container">
+                                <input type="file" id="documentFile" name="documentFile" accept=".pdf,.txt" required 
+                                    aria-describedby="fileHelpText fileError">
+                                <div class="file-input-button">
+                                    <i class="fas fa-file-upload"></i> Choose File
+                                </div>
+                                <div class="file-name" id="fileName">No file chosen</div>
+                            </div>
+                            <div id="fileHelpText" class="help-text">Maximum file size: 10MB. Supported formats: PDF, TXT</div>
+                            <div id="fileError" class="error-message" aria-live="polite"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="emailAddress">Email Address:</label>
+                            <input type="email" id="emailAddress" name="emailAddress" placeholder="your.email@example.com" required
+                                aria-describedby="emailHelpText emailError">
+                            <div id="emailHelpText" class="help-text">We'll send the audio file to this email address</div>
+                            <div id="emailError" class="error-message" aria-live="polite"></div>
+                        </div>
+
+                        <button type="submit" id="submitButton" class="submit-button">
+                            <span class="button-text">Convert to Speech</span>
+                            <span class="spinner" aria-hidden="true"></span>
+                        </button>
+                    </form>
+
+                    <div id="progressContainer" class="progress-container" aria-live="polite" hidden>
+                        <div class="progress-label">Uploading document...</div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="progressBarFill"></div>
+                        </div>
+                        <div class="progress-percentage" id="progressPercentage">0%</div>
+                    </div>
+
+                    <div id="feedbackArea" class="feedback-message" aria-live="assertive" hidden></div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Powered by <a href="https://n8n.io" target="_blank" rel="noopener noreferrer">n8n</a> and Hugging Face Text-to-Speech</p>
+            <p class="footer-links">
+                <a href="https://github.com/Tall-H/Just-Speech-X" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <a href="https://n8n.io/integrations/hugging-face/" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-robot"></i> n8n Integrations
+                </a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
