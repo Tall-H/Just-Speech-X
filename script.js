@@ -4,8 +4,12 @@ const CONFIG = {
     MAX_FILE_SIZE: 10 * 1024 * 1024,
     // Allowed file types
     ALLOWED_FILE_TYPES: ['.pdf', '.txt'],
-    // n8n webhook URL - update this with your actual webhook URL
-    WEBHOOK_URL: 'https://your-n8n-instance.com/webhook/pdf-to-audio',
+    // n8n webhook URL with security token
+    WEBHOOK_URL: 'https://ths-n8n-serv-u36821.vm.elestio.app/webhook-test/pdf-to-audio-upload',
+    // Site origin for security checking
+    ALLOWED_ORIGIN: 'tall-h.github.io',
+    // Security token - simple protection against random usage
+    SECURITY_TOKEN: 'jsx_' + btoa(navigator.userAgent.substring(0, 10) + new Date().getDay()).substring(0, 12),
     // Rate at which to update progress (ms)
     PROGRESS_UPDATE_INTERVAL: 100
 };
@@ -31,6 +35,23 @@ function init() {
     elements.form.addEventListener('submit', handleFormSubmit);
     elements.fileInput.addEventListener('change', handleFileChange);
     elements.emailInput.addEventListener('input', validateEmail);
+    
+    // Verify the origin to prevent misuse
+    verifyOrigin();
+}
+
+// Verify that the site is being used from the correct origin
+function verifyOrigin() {
+    // This is a simple check that can be bypassed, but it helps prevent casual misuse
+    if (!window.location.hostname.includes(CONFIG.ALLOWED_ORIGIN) && 
+        !window.location.hostname.includes('localhost') && 
+        !window.location.hostname.includes('127.0.0.1')) {
+        
+        // If running from an unauthorized domain, disable the form
+        console.warn('Running from unauthorized domain');
+        elements.submitButton.disabled = true;
+        showFeedback('error', 'This form can only be used from the official website.');
+    }
 }
 
 // Handle file input change
@@ -108,6 +129,10 @@ async function handleFormSubmit(event) {
     
     // Create FormData object
     const formData = new FormData(elements.form);
+    
+    // Add security token to prevent unauthorized use
+    formData.append('securityToken', CONFIG.SECURITY_TOKEN);
+    formData.append('referrer', document.referrer || 'direct');
     
     try {
         // Start upload with progress tracking
@@ -193,6 +218,10 @@ async function uploadWithProgress(formData) {
         // Open and send request
         xhr.open('POST', CONFIG.WEBHOOK_URL, true);
         xhr.timeout = 60000; // 60 seconds timeout
+        
+        // Add custom header for additional security
+        xhr.setRequestHeader('X-JSX-Auth', CONFIG.SECURITY_TOKEN);
+        
         xhr.send(formData);
     });
 }
