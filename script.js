@@ -10,14 +10,6 @@ const CONFIG = {
     PROGRESS_UPDATE_INTERVAL: 100
 };
 
-// n8n API key - Obfuscated for security (do not share the actual key in public repos)
-// This is a simple obfuscation, not true encryption
-const getAuthKey = () => {
-    const encoded = "c3UxaGhDaU9iJUpJcUlUTklzSXpPc1ZDYmNjZlVtMzVkR01HQ3VoTFNqQUFQLUxDSndhQ2lPbEp2d0puSmRNVkJCMXBheE02QlFqbUZXbk93VndKSnNkTVhYWnBJVndpTGZtcFljcVhWbGxMcHlTS29tX3NKSnE";
-    // Simple XOR with a fixed key - not secure but obscures from casual viewing
-    return atob(encoded.replace(/_/g, "/").replace(/-/g, "+"));
-};
-
 // DOM Elements
 const elements = {
     form: document.getElementById('uploadForm'),
@@ -39,6 +31,9 @@ function init() {
     elements.form.addEventListener('submit', handleFormSubmit);
     elements.fileInput.addEventListener('change', handleFileChange);
     elements.emailInput.addEventListener('input', validateEmail);
+    
+    // Debug mode - log webhook URL to console
+    console.log('Using webhook URL:', CONFIG.WEBHOOK_URL);
 }
 
 // Handle file input change
@@ -51,6 +46,7 @@ function handleFileChange(event) {
     if (file) {
         // Display file name
         elements.fileName.textContent = file.name;
+        console.log('Selected file:', file.name, 'Size:', file.size, 'Type:', file.type);
         
         // Validate file type and size
         validateFile(file);
@@ -116,6 +112,7 @@ async function handleFormSubmit(event) {
     
     // Create FormData object
     const formData = new FormData(elements.form);
+    console.log('Form data prepared:', elements.emailInput.value);
     
     try {
         // Start upload with progress tracking
@@ -141,15 +138,25 @@ async function uploadWithProgress(formData) {
             if (event.lengthComputable) {
                 const percentComplete = Math.round((event.loaded / event.total) * 100);
                 updateProgress(percentComplete);
+                console.log('Upload progress:', percentComplete + '%');
             }
         });
         
         // Handle response
         xhr.addEventListener('load', () => {
+            console.log('Response received:', xhr.status, xhr.statusText);
+            console.log('Response headers:', xhr.getAllResponseHeaders());
+            
+            try {
+                console.log('Response text:', xhr.responseText);
+            } catch (e) {
+                console.log('Could not log response text');
+            }
+            
             if (xhr.status >= 200 && xhr.status < 300) {
                 try {
                     const response = JSON.parse(xhr.responseText);
-                    console.log('Server response:', response);
+                    console.log('Server response (parsed):', response);
                     showFeedback('success', 'Document successfully uploaded! You will receive the audio file in your email shortly.');
                     elements.form.reset();
                     elements.fileName.textContent = 'No file chosen';
@@ -164,6 +171,7 @@ async function uploadWithProgress(formData) {
             } else {
                 let errorMessage = `Upload failed: ${xhr.status} ${xhr.statusText}`;
                 try {
+                    console.error('Full error response:', xhr.responseText);
                     const errorResponse = JSON.parse(xhr.responseText);
                     if (errorResponse && errorResponse.message) {
                         errorMessage = `Error: ${errorResponse.message}`;
@@ -171,6 +179,7 @@ async function uploadWithProgress(formData) {
                 } catch (e) {
                     // Response was not JSON
                     console.error('Error response was not JSON:', xhr.responseText);
+                    errorMessage = `Upload failed: ${xhr.status} ${xhr.statusText}. Server response: ${xhr.responseText.substring(0, 100)}...`;
                 }
                 showFeedback('error', errorMessage);
                 reject(new Error(errorMessage));
@@ -185,6 +194,7 @@ async function uploadWithProgress(formData) {
         
         // Handle network errors
         xhr.addEventListener('error', () => {
+            console.error('Network error occurred');
             showFeedback('error', 'A network error occurred. Please check your connection and try again.');
             elements.progressContainer.hidden = true;
             updateProgress(0);
@@ -193,6 +203,7 @@ async function uploadWithProgress(formData) {
         
         // Handle timeouts
         xhr.addEventListener('timeout', () => {
+            console.error('Request timed out');
             showFeedback('error', 'The upload timed out. Please try again later.');
             elements.progressContainer.hidden = true;
             updateProgress(0);
@@ -200,16 +211,18 @@ async function uploadWithProgress(formData) {
         });
         
         // Open and send request
+        console.log('Opening connection to webhook URL:', CONFIG.WEBHOOK_URL);
         xhr.open('POST', CONFIG.WEBHOOK_URL, true);
         
-        // Add authorization header - this is what the API key is for
-        xhr.setRequestHeader('Authorization', `Bearer ${getAuthKey()}`);
-        
-        // Add headers that might help with CORS
-        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        // Debug log all form data
+        console.log('FormData contents:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File (${pair[1].name}, ${pair[1].size} bytes)` : pair[1]));
+        }
         
         xhr.timeout = 60000; // 60 seconds timeout
         xhr.send(formData);
+        console.log('Request sent');
     });
 }
 
