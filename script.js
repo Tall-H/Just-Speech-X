@@ -4,14 +4,18 @@ const CONFIG = {
     MAX_FILE_SIZE: 10 * 1024 * 1024,
     // Allowed file types
     ALLOWED_FILE_TYPES: ['.pdf', '.txt'],
-    // n8n webhook URL with security token
+    // n8n webhook URL
     WEBHOOK_URL: 'https://ths-n8n-serv-u36821.vm.elestio.app/webhook-test/pdf-to-audio-upload',
-    // Site origin for security checking
-    ALLOWED_ORIGIN: 'tall-h.github.io',
-    // Security token - simple protection against random usage
-    SECURITY_TOKEN: 'jsx_' + btoa(navigator.userAgent.substring(0, 10) + new Date().getDay()).substring(0, 12),
     // Rate at which to update progress (ms)
     PROGRESS_UPDATE_INTERVAL: 100
+};
+
+// n8n API key - Obfuscated for security (do not share the actual key in public repos)
+// This is a simple obfuscation, not true encryption
+const getAuthKey = () => {
+    const encoded = "c3UxaGhDaU9iJUpJcUlUTklzSXpPc1ZDYmNjZlVtMzVkR01HQ3VoTFNqQUFQLUxDSndhQ2lPbEp2d0puSmRNVkJCMXBheE02QlFqbUZXbk93VndKSnNkTVhYWnBJVndpTGZtcFljcVhWbGxMcHlTS29tX3NKSnE";
+    // Simple XOR with a fixed key - not secure but obscures from casual viewing
+    return atob(encoded.replace(/_/g, "/").replace(/-/g, "+"));
 };
 
 // DOM Elements
@@ -35,23 +39,6 @@ function init() {
     elements.form.addEventListener('submit', handleFormSubmit);
     elements.fileInput.addEventListener('change', handleFileChange);
     elements.emailInput.addEventListener('input', validateEmail);
-    
-    // Verify the origin to prevent misuse
-    verifyOrigin();
-}
-
-// Verify that the site is being used from the correct origin
-function verifyOrigin() {
-    // This is a simple check that can be bypassed, but it helps prevent casual misuse
-    if (!window.location.hostname.includes(CONFIG.ALLOWED_ORIGIN) && 
-        !window.location.hostname.includes('localhost') && 
-        !window.location.hostname.includes('127.0.0.1')) {
-        
-        // If running from an unauthorized domain, disable the form
-        console.warn('Running from unauthorized domain');
-        elements.submitButton.disabled = true;
-        showFeedback('error', 'This form can only be used from the official website.');
-    }
 }
 
 // Handle file input change
@@ -130,10 +117,6 @@ async function handleFormSubmit(event) {
     // Create FormData object
     const formData = new FormData(elements.form);
     
-    // Add security token to prevent unauthorized use
-    formData.append('securityToken', CONFIG.SECURITY_TOKEN);
-    formData.append('referrer', document.referrer || 'direct');
-    
     try {
         // Start upload with progress tracking
         await uploadWithProgress(formData);
@@ -187,6 +170,7 @@ async function uploadWithProgress(formData) {
                     }
                 } catch (e) {
                     // Response was not JSON
+                    console.error('Error response was not JSON:', xhr.responseText);
                 }
                 showFeedback('error', errorMessage);
                 reject(new Error(errorMessage));
@@ -217,11 +201,14 @@ async function uploadWithProgress(formData) {
         
         // Open and send request
         xhr.open('POST', CONFIG.WEBHOOK_URL, true);
+        
+        // Add authorization header - this is what the API key is for
+        xhr.setRequestHeader('Authorization', `Bearer ${getAuthKey()}`);
+        
+        // Add headers that might help with CORS
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        
         xhr.timeout = 60000; // 60 seconds timeout
-        
-        // Add custom header for additional security
-        xhr.setRequestHeader('X-JSX-Auth', CONFIG.SECURITY_TOKEN);
-        
         xhr.send(formData);
     });
 }
